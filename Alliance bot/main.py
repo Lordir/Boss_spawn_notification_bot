@@ -26,6 +26,35 @@ def send_notifications(time_respawn_ogre, time_respawn_robot):
 
 def telegram_bot(token):
     bot = telebot.TeleBot(token)
+    bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
+    bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
+    last_spawn_robot = bd_spawn_robot.readlines()[-1]
+    last_spawn_ogre = bd_spawn_ogre.readlines()[-1]
+    # remove_last удаляет /n в конце строки
+    remove_last_robot = last_spawn_robot[:-1]
+    remove_last_ogre = last_spawn_ogre[:-1]
+    # Благодаря split разделяется имя пользователя и сама дата, после чего имя удаляется, остается только дата
+    time_robot = remove_last_robot.split('=')
+    time_robot.pop(0)
+    time_ogre = remove_last_ogre.split('=')
+    time_ogre.pop(0)
+    print(time_robot)
+    print(time_ogre)
+    # Преобразование даты из str в datetime
+    robot_datetime = datetime.datetime.strptime(time_robot[0], '%Y-%m-%d %H:%M:%S')
+    ogre_datetime = datetime.datetime.strptime(time_ogre[0], '%Y-%m-%d %H:%M:%S')
+    # Рассчет следующего спавна
+    robot = robot_datetime + datetime.timedelta(hours=26, minutes=1)
+    ogre = ogre_datetime + datetime.timedelta(hours=23, minutes=1)
+    time_now = datetime.datetime.today()
+    if (robot - time_now).seconds < 3600:
+        print("Спавн робота через час")
+    elif (robot - time_now).seconds < 900:
+        print("Спавн робота 15 минут")
+    if (ogre - time_now).seconds < 3600:
+        print("Спавн огра через час")
+    elif (ogre - time_now).seconds < 900:
+        print("Спавн огра 15 минут")
 
     @bot.message_handler(commands=['start'])
     def start(message):
@@ -47,6 +76,9 @@ def telegram_bot(token):
             new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
                                                int(time_spawn[0]), int(time_spawn[1]))
             bot.send_message(message.chat.id, f"Спасибо за обновление, спавн робота был: {new_time_spawn}")
+            bd = open('bd_spawn_robot.txt', 'a')
+            bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+            bd.close()
 
     @bot.message_handler(commands=['spawn_ogre'])
     def spawn_ogre(message):
@@ -60,6 +92,9 @@ def telegram_bot(token):
             new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
                                                int(time_spawn[0]), int(time_spawn[1]))
             bot.send_message(message.chat.id, f"Спасибо за обновление, спавн огра был: {new_time_spawn}")
+            bd = open('bd_spawn_ogre.txt', 'a')
+            bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+            bd.close()
 
     @bot.message_handler()
     def get_user_text(message):

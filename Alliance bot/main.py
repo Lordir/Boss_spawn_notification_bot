@@ -1,7 +1,7 @@
 import telebot
 import datetime
 
-from token_telegram import token
+from token_telegram import token, chat_id
 
 
 def send_notifications(time_respawn_ogre, time_respawn_robot):
@@ -46,14 +46,22 @@ def telegram_bot(token):
     # Рассчет следующего спавна
     robot = robot_datetime + datetime.timedelta(hours=26, minutes=1)
     ogre = ogre_datetime + datetime.timedelta(hours=23, minutes=1)
+    # Оповещения
+    # r_hour = ""
+    print(robot)
     time_now = datetime.datetime.today()
-    if (robot - time_now).seconds < 3600:
+    print(time_now)
+    print((time_now - robot).seconds)
+    if (time_now - robot).seconds < 3600:
+        # if r_hour != time_now.day:
+        #     r_hour = time_now.day
+        bot.send_message(chat_id, "Спавн робота через час")
         print("Спавн робота через час")
-    elif (robot - time_now).seconds < 900:
+    elif (time_now - robot).seconds < 900:
         print("Спавн робота 15 минут")
-    if (ogre - time_now).seconds < 3600:
+    if (time_now - ogre).seconds < 3600:
         print("Спавн огра через час")
-    elif (ogre - time_now).seconds < 900:
+    elif (time_now - ogre).seconds < 900:
         print("Спавн огра 15 минут")
 
     @bot.message_handler(commands=['start'])

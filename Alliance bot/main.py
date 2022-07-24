@@ -1,8 +1,10 @@
 import telebot
 import datetime
 
-from token_telegram import token, chat_id
+from token_telegram import token, chat_id, moderators_id
 
+
+# message.from_user.id
 
 def send_notifications(time_respawn_ogre, time_respawn_robot):
     time_now = datetime.datetime.today()
@@ -74,40 +76,48 @@ def telegram_bot(token):
 
     @bot.message_handler(commands=['spawn_robot'])
     def spawn_robot(message):
-        spawn_robot = message.text
-        time_spawn = spawn_robot.split(' ')
-        time_spawn.pop(0)
-        time_now = datetime.datetime.today()
-        if (len(time_spawn)) != 4:
-            bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+        if message.from_user.id in moderators_id:
+            spawn_robot = message.text
+            time_spawn = spawn_robot.split(' ')
+            time_spawn.pop(0)
+            time_now = datetime.datetime.today()
+            if (len(time_spawn)) != 4:
+                bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+            else:
+                new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
+                                                   int(time_spawn[0]), int(time_spawn[1]))
+                bot.send_message(message.chat.id, f"Спасибо за обновление, спавн робота был: {new_time_spawn}")
+                bd = open('bd_spawn_robot.txt', 'a')
+                bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+                bd.close()
         else:
-            new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
-                                               int(time_spawn[0]), int(time_spawn[1]))
-            bot.send_message(message.chat.id, f"Спасибо за обновление, спавн робота был: {new_time_spawn}")
-            bd = open('bd_spawn_robot.txt', 'a')
-            bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
-            bd.close()
+            bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
 
     @bot.message_handler(commands=['spawn_ogre'])
     def spawn_ogre(message):
-        spawn_ogre = message.text
-        time_spawn = spawn_ogre.split(' ')
-        time_spawn.pop(0)
-        time_now = datetime.datetime.today()
-        if (len(time_spawn)) != 4:
-            bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+        if message.from_user.id in moderators_id:
+            spawn_ogre = message.text
+            time_spawn = spawn_ogre.split(' ')
+            time_spawn.pop(0)
+            time_now = datetime.datetime.today()
+            if (len(time_spawn)) != 4:
+                bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+            else:
+                new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
+                                                   int(time_spawn[0]), int(time_spawn[1]))
+                bot.send_message(message.chat.id, f"Спасибо за обновление, спавн огра был: {new_time_spawn}")
+                bd = open('bd_spawn_ogre.txt', 'a')
+                bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+                bd.close()
         else:
-            new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
-                                               int(time_spawn[0]), int(time_spawn[1]))
-            bot.send_message(message.chat.id, f"Спасибо за обновление, спавн огра был: {new_time_spawn}")
-            bd = open('bd_spawn_ogre.txt', 'a')
-            bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
-            bd.close()
+            bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
 
     @bot.message_handler()
     def get_user_text(message):
         if message.text == ("+" + "1"):
             bot.send_message(message.chat.id, f"Ваш часовой пояс = {message.text}")
+            # bot.send_message(message.chat.id, message.from_user.id)
+            # bot.send_message(message.chat.id, message)
         elif message.text == ("-" + "1"):
             bot.send_message(message.chat.id, f"Ваш часовой пояс = {message.text}")
         else:

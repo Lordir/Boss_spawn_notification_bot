@@ -1,35 +1,15 @@
 import telebot
 import datetime
+import asyncio
+import aiohttp
 
 from token_telegram import token, chat_id, moderators_id
 
 
 # message.from_user.id
 
-def send_notifications(time_respawn_ogre, time_respawn_robot):
+def send_notifications(bd_spawn_robot, bd_spawn_ogre):
     time_now = datetime.datetime.today()
-    time_test = datetime.datetime(2022, 7, 1, 19, 1)
-    ogre = time_respawn_ogre + datetime.timedelta(hours=23, minutes=1)
-    robot = time_respawn_robot + datetime.timedelta(hours=26, minutes=1)
-    print(time_test)
-    # print(ogre)
-
-    # time_test.strftime()
-
-    if (ogre - time_test).seconds < 3600:
-        print("Спавн огра через час")
-    elif (ogre - time_test).seconds < 900:
-        print("Спавн огра 15 минут")
-    if (robot - time_test).seconds < 3600:
-        print("Спавн робота через час")
-    elif (robot - time_test).seconds < 900:
-        print("Спавн робота 15 минут")
-
-
-def telegram_bot(token):
-    bot = telebot.TeleBot(token)
-    bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
-    bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
     last_spawn_robot = bd_spawn_robot.readlines()[-1]
     last_spawn_ogre = bd_spawn_ogre.readlines()[-1]
     # remove_last удаляет /n в конце строки
@@ -45,26 +25,40 @@ def telegram_bot(token):
     # Преобразование даты из str в datetime
     robot_datetime = datetime.datetime.strptime(time_robot[0], '%Y-%m-%d %H:%M:%S')
     ogre_datetime = datetime.datetime.strptime(time_ogre[0], '%Y-%m-%d %H:%M:%S')
-    # Рассчет следующего спавна
-    robot = robot_datetime + datetime.timedelta(hours=26, minutes=1)
-    ogre = ogre_datetime + datetime.timedelta(hours=23, minutes=1)
-    # Оповещения
-    # r_hour = ""
-    print(robot)
-    time_now = datetime.datetime.today()
-    print(time_now)
-    print((time_now - robot).seconds)
-    if (time_now - robot).seconds < 3600:
-        # if r_hour != time_now.day:
-        #     r_hour = time_now.day
-        bot.send_message(chat_id, "Спавн робота через час")
-        print("Спавн робота через час")
-    elif (time_now - robot).seconds < 900:
-        print("Спавн робота 15 минут")
-    if (time_now - ogre).seconds < 3600:
-        print("Спавн огра через час")
-    elif (time_now - ogre).seconds < 900:
-        print("Спавн огра 15 минут")
+    robot_hour = robot_datetime - datetime.timedelta(hours=1)
+    robot_15_minutes = robot_datetime - datetime.timedelta(minutes=15)
+    ogre_hour = ogre_datetime - datetime.timedelta(hours=1)
+    ogre_15_minutes = ogre_datetime - datetime.timedelta(minutes=15)
+    if time_now == robot_hour:
+        pass
+    elif time_now == robot_15_minutes:
+        pass
+    elif time_now == ogre_hour:
+        pass
+    elif time_now == ogre_15_minutes:
+        pass
+    elif (time_now.day == robot_datetime.day) and (time_now.hour == robot_datetime.hour) and (
+            time_now.minute == robot_datetime.minute):
+        robot_new = robot_datetime + datetime.timedelta(hours=26, minutes=1)
+        time_write = datetime.datetime(time_now.year, robot_new.month, robot_new.day,
+                                       robot_new.hour, robot_new.minute)
+        bd = open('bd_spawn_robot.txt', 'a')
+        bd.write("bot =" + str(time_write) + '\n')
+        bd.close()
+    elif (time_now.day == ogre_datetime.day) and (time_now.hour == ogre_datetime.hour) and (
+            time_now.minute == ogre_datetime.minute):
+        ogre_new = ogre_datetime + datetime.timedelta(hours=23, minutes=1)
+        time_write = datetime.datetime(time_now.year, ogre_new.month, ogre_new.day,
+                                       ogre_new.hour, ogre_new.minute)
+        bd = open('bd_spawn_ogre.txt', 'a')
+        bd.write("bot =" + str(time_write) + '\n')
+        bd.close()
+
+
+bot = telebot.TeleBot(token)
+
+
+def telegram_bot(bd_spawn_robot, bd_spawn_ogre):
 
     @bot.message_handler(commands=['start'])
     def start(message):
@@ -86,9 +80,10 @@ def telegram_bot(token):
             else:
                 new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
                                                    int(time_spawn[0]), int(time_spawn[1]))
-                bot.send_message(message.chat.id, f"Спасибо за обновление, спавн робота был: {new_time_spawn}")
+                robot_new = new_time_spawn + datetime.timedelta(hours=26, minutes=1)
+                bot.send_message(message.chat.id, f"Спасибо за обновление, следующий спавн робота: {robot_new}")
                 bd = open('bd_spawn_robot.txt', 'a')
-                bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+                bd.write(message.from_user.first_name + ' =' + str(robot_new) + '\n')
                 bd.close()
         else:
             bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
@@ -105,9 +100,10 @@ def telegram_bot(token):
             else:
                 new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
                                                    int(time_spawn[0]), int(time_spawn[1]))
-                bot.send_message(message.chat.id, f"Спасибо за обновление, спавн огра был: {new_time_spawn}")
+                ogre_new = new_time_spawn + datetime.timedelta(hours=23, minutes=1)
+                bot.send_message(message.chat.id, f"Спасибо за обновление, следующий спавн огра: {ogre_new}")
                 bd = open('bd_spawn_ogre.txt', 'a')
-                bd.write(message.from_user.first_name + ' =' + str(new_time_spawn) + '\n')
+                bd.write(message.from_user.first_name + ' =' + str(ogre_new) + '\n')
                 bd.close()
         else:
             bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
@@ -133,11 +129,15 @@ def telegram_bot(token):
             # bot.send_message(message.chat.id, "Неизвестная команда")
             # bot.send_message(message.chat.id, time)
 
-    bot.polling()
+    # bot.polling()
 
 
 if __name__ == '__main__':
-    telegram_bot(token)
+    bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
+    bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
+    # send_notifications(bd_spawn_robot, bd_spawn_ogre)
+    telegram_bot(bd_spawn_robot, bd_spawn_ogre)
+    bot.polling(none_stop=True)
 
     time_now = datetime.datetime.today()
     send_notifications(time_now, time_now)

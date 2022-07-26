@@ -1,6 +1,7 @@
 import logging
 import datetime
 
+import asyncio
 from aiogram import Bot, Dispatcher, executor, types
 from token_telegram import token, chat_id, moderators_id
 
@@ -12,6 +13,16 @@ logging.basicConfig(level=logging.INFO)
 # Initialize bot and dispatcher
 bot = Bot(token=token)
 dp = Dispatcher(bot)
+
+
+async def send_notifications():
+    while True:
+        bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
+        bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
+        loop = asyncio.get_event_loop()
+        loop.create_task(check_time(bd_spawn_robot, bd_spawn_ogre))
+        # check_time(bd_spawn_robot, bd_spawn_ogre)
+        await asyncio.sleep(60)
 
 
 @dp.message_handler(commands=['start'])
@@ -61,7 +72,19 @@ async def spawn_ogre(message: types.Message):
         await message.reply("Вы не имеете прав для обновления спавна босса")
 
 
-def send_notifications(bd_spawn_robot, bd_spawn_ogre):
+@dp.message_handler()
+async def get_user_text(message: types.Message):
+    if message.text == ("+" + "1"):
+        await message.reply(f"Ваш часовой пояс = {message.text}")
+        # bot.send_message(message.chat.id, message.from_user.id)
+        # bot.send_message(message.chat.id, message)
+    elif message.text == ("-" + "1"):
+        await message.reply(f"Ваш часовой пояс = {message.text}")
+    else:
+        await message.reply("Неизвестная команда")
+
+
+async def check_time(bd_spawn_robot, bd_spawn_ogre):
     time_now = datetime.datetime.today()
     last_spawn_robot = bd_spawn_robot.readlines()[-1]
     last_spawn_ogre = bd_spawn_ogre.readlines()[-1]
@@ -73,8 +96,8 @@ def send_notifications(bd_spawn_robot, bd_spawn_ogre):
     time_robot.pop(0)
     time_ogre = remove_last_ogre.split('=')
     time_ogre.pop(0)
-    print(time_robot)
-    print(time_ogre)
+    # print(time_robot)
+    # print(time_ogre)
     # Преобразование даты из str в datetime
     robot_datetime = datetime.datetime.strptime(time_robot[0], '%Y-%m-%d %H:%M:%S')
     ogre_datetime = datetime.datetime.strptime(time_ogre[0], '%Y-%m-%d %H:%M:%S')
@@ -82,14 +105,18 @@ def send_notifications(bd_spawn_robot, bd_spawn_ogre):
     robot_15_minutes = robot_datetime - datetime.timedelta(minutes=15)
     ogre_hour = ogre_datetime - datetime.timedelta(hours=1)
     ogre_15_minutes = ogre_datetime - datetime.timedelta(minutes=15)
-    if time_now == robot_hour:
-        pass
-    elif time_now == robot_15_minutes:
-        pass
-    elif time_now == ogre_hour:
-        pass
-    elif time_now == ogre_15_minutes:
-        pass
+    if (time_now.day == robot_hour.day) and (time_now.hour == robot_hour.hour) and (
+            time_now.minute == robot_hour.minute):
+        await bot.send_message(chat_id, "Спавн робота через час")
+    elif (time_now.day == robot_15_minutes.day) and (time_now.hour == robot_15_minutes.hour) and (
+            time_now.minute == robot_15_minutes.minute):
+        await bot.send_message(chat_id, "Спавн робота через 15 минут")
+    elif (time_now.day == ogre_hour.day) and (time_now.hour == ogre_hour.hour) and (
+            time_now.minute == ogre_hour.minute):
+        await bot.send_message(chat_id, "Спавн огра через час")
+    elif (time_now.day == ogre_15_minutes.day) and (time_now.hour == ogre_15_minutes.hour) and (
+            time_now.minute == ogre_15_minutes.minute):
+        await bot.send_message(chat_id, "Спавн огра через 15 минут")
     elif (time_now.day == robot_datetime.day) and (time_now.hour == robot_datetime.hour) and (
             time_now.minute == robot_datetime.minute):
         robot_new = robot_datetime + datetime.timedelta(hours=26, minutes=1)
@@ -98,6 +125,7 @@ def send_notifications(bd_spawn_robot, bd_spawn_ogre):
         bd = open('bd_spawn_robot.txt', 'a')
         bd.write("bot =" + str(time_write) + '\n')
         bd.close()
+        await bot.send_message(chat_id, f"Робот заспавнился, следующий спавн: {robot_new}")
     elif (time_now.day == ogre_datetime.day) and (time_now.hour == ogre_datetime.hour) and (
             time_now.minute == ogre_datetime.minute):
         ogre_new = ogre_datetime + datetime.timedelta(hours=23, minutes=1)
@@ -106,50 +134,10 @@ def send_notifications(bd_spawn_robot, bd_spawn_ogre):
         bd = open('bd_spawn_ogre.txt', 'a')
         bd.write("bot =" + str(time_write) + '\n')
         bd.close()
-
-
-def telegram_bot(bd_spawn_robot, bd_spawn_ogre):
-    @bot.message_handler(commands=['changetimezone'])
-    def change_time_zone(message):
-        bot.send_message(message.chat.id, "changetimezone")
-
-
-
-    @bot.message_handler()
-    def get_user_text(message):
-        if message.text == ("+" + "1"):
-            bot.send_message(message.chat.id, f"Ваш часовой пояс = {message.text}")
-            # bot.send_message(message.chat.id, message.from_user.id)
-            # bot.send_message(message.chat.id, message)
-        elif message.text == ("-" + "1"):
-            bot.send_message(message.chat.id, f"Ваш часовой пояс = {message.text}")
-        else:
-            # a = datetime.datetime.today()
-            # ogre = a + datetime.timedelta(hours=23, minutes=1)
-            # robot = a + datetime.timedelta(hours=26, minutes=1)
-            # bot.send_message(message.chat.id, a)
-            # bot.send_message(message.chat.id, ogre)
-            # bot.send_message(message.chat.id, robot)
-            spawn_robot = message.text
-
-            # time.strftime("%d")
-            # bot.send_message(message.chat.id, "Неизвестная команда")
-            # bot.send_message(message.chat.id, time)
-
-    # bot.polling()
+        await bot.send_message(chat_id, f"Огр заспавнился, следующий спавн: {ogre_new}")
 
 
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(send_notifications())
     executor.start_polling(dp, skip_updates=True)
-
-# if __name__ == '__main__':
-#     bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
-#     bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
-#     # send_notifications(bd_spawn_robot, bd_spawn_ogre)
-#     telegram_bot(bd_spawn_robot, bd_spawn_ogre)
-#     # Thread(target=test(n), daemon=True).start()
-#     # Thread(target=telegram_bot(bd_spawn_robot, bd_spawn_ogre), daemon=True).start()
-#     bot.polling(none_stop=True)
-
-# time_now = datetime.datetime.today()
-# send_notifications(time_now, time_now)

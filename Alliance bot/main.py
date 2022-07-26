@@ -1,12 +1,65 @@
-import telebot
+import logging
 import datetime
-import asyncio
-import aiohttp
 
+from aiogram import Bot, Dispatcher, executor, types
 from token_telegram import token, chat_id, moderators_id
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 # message.from_user.id
+
+# Initialize bot and dispatcher
+bot = Bot(token=token)
+dp = Dispatcher(bot)
+
+
+@dp.message_handler(commands=['start'])
+async def start(message: types.Message):
+    await message.reply(f"Hello, {message.from_user.first_name}")
+
+
+@dp.message_handler(commands=['spawn_robot'])
+async def spawn_robot(message: types.Message):
+    if message.from_user.id in moderators_id:
+        spawn_robot = message.text
+        time_spawn = spawn_robot.split(' ')
+        time_spawn.pop(0)
+        time_now = datetime.datetime.today()
+        if (len(time_spawn)) != 4:
+            await message.reply("Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+        else:
+            new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
+                                               int(time_spawn[0]), int(time_spawn[1]))
+            robot_new = new_time_spawn + datetime.timedelta(hours=26, minutes=1)
+            await message.reply(f"Спасибо за обновление, следующий спавн робота: {robot_new}")
+            bd = open('bd_spawn_robot.txt', 'a')
+            bd.write(message.from_user.first_name + ' =' + str(robot_new) + '\n')
+            bd.close()
+    else:
+        await message.reply("Вы не имеете прав для обновления спавна босса")
+
+
+@dp.message_handler(commands=['spawn_ogre'])
+async def spawn_ogre(message: types.Message):
+    if message.from_user.id in moderators_id:
+        spawn_ogre = message.text
+        time_spawn = spawn_ogre.split(' ')
+        time_spawn.pop(0)
+        time_now = datetime.datetime.today()
+        if (len(time_spawn)) != 4:
+            await message.reply("Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
+        else:
+            new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
+                                               int(time_spawn[0]), int(time_spawn[1]))
+            ogre_new = new_time_spawn + datetime.timedelta(hours=23, minutes=1)
+            await message.reply(f"Спасибо за обновление, следующий спавн огра: {ogre_new}")
+            bd = open('bd_spawn_ogre.txt', 'a')
+            bd.write(message.from_user.first_name + ' =' + str(ogre_new) + '\n')
+            bd.close()
+    else:
+        await message.reply("Вы не имеете прав для обновления спавна босса")
+
 
 def send_notifications(bd_spawn_robot, bd_spawn_ogre):
     time_now = datetime.datetime.today()
@@ -55,58 +108,12 @@ def send_notifications(bd_spawn_robot, bd_spawn_ogre):
         bd.close()
 
 
-bot = telebot.TeleBot(token)
-
-
 def telegram_bot(bd_spawn_robot, bd_spawn_ogre):
-
-    @bot.message_handler(commands=['start'])
-    def start(message):
-        bot.send_message(message.chat.id, f"Hello, {message.from_user.first_name}")
-
     @bot.message_handler(commands=['changetimezone'])
     def change_time_zone(message):
         bot.send_message(message.chat.id, "changetimezone")
 
-    @bot.message_handler(commands=['spawn_robot'])
-    def spawn_robot(message):
-        if message.from_user.id in moderators_id:
-            spawn_robot = message.text
-            time_spawn = spawn_robot.split(' ')
-            time_spawn.pop(0)
-            time_now = datetime.datetime.today()
-            if (len(time_spawn)) != 4:
-                bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
-            else:
-                new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
-                                                   int(time_spawn[0]), int(time_spawn[1]))
-                robot_new = new_time_spawn + datetime.timedelta(hours=26, minutes=1)
-                bot.send_message(message.chat.id, f"Спасибо за обновление, следующий спавн робота: {robot_new}")
-                bd = open('bd_spawn_robot.txt', 'a')
-                bd.write(message.from_user.first_name + ' =' + str(robot_new) + '\n')
-                bd.close()
-        else:
-            bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
 
-    @bot.message_handler(commands=['spawn_ogre'])
-    def spawn_ogre(message):
-        if message.from_user.id in moderators_id:
-            spawn_ogre = message.text
-            time_spawn = spawn_ogre.split(' ')
-            time_spawn.pop(0)
-            time_now = datetime.datetime.today()
-            if (len(time_spawn)) != 4:
-                bot.send_message(message.chat.id, "Данные введены некоректно, необходим формат: ЧАСЫ МИНУТЫ ДЕНЬ МЕСЯЦ")
-            else:
-                new_time_spawn = datetime.datetime(time_now.year, int(time_spawn[3]), int(time_spawn[2]),
-                                                   int(time_spawn[0]), int(time_spawn[1]))
-                ogre_new = new_time_spawn + datetime.timedelta(hours=23, minutes=1)
-                bot.send_message(message.chat.id, f"Спасибо за обновление, следующий спавн огра: {ogre_new}")
-                bd = open('bd_spawn_ogre.txt', 'a')
-                bd.write(message.from_user.first_name + ' =' + str(ogre_new) + '\n')
-                bd.close()
-        else:
-            bot.send_message(message.chat.id, "Вы не имеете прав для обновления спавна босса")
 
     @bot.message_handler()
     def get_user_text(message):
@@ -133,11 +140,16 @@ def telegram_bot(bd_spawn_robot, bd_spawn_ogre):
 
 
 if __name__ == '__main__':
-    bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
-    bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
-    # send_notifications(bd_spawn_robot, bd_spawn_ogre)
-    telegram_bot(bd_spawn_robot, bd_spawn_ogre)
-    bot.polling(none_stop=True)
+    executor.start_polling(dp, skip_updates=True)
 
-    time_now = datetime.datetime.today()
-    send_notifications(time_now, time_now)
+# if __name__ == '__main__':
+#     bd_spawn_robot = open('bd_spawn_robot.txt', 'r')
+#     bd_spawn_ogre = open('bd_spawn_ogre.txt', 'r')
+#     # send_notifications(bd_spawn_robot, bd_spawn_ogre)
+#     telegram_bot(bd_spawn_robot, bd_spawn_ogre)
+#     # Thread(target=test(n), daemon=True).start()
+#     # Thread(target=telegram_bot(bd_spawn_robot, bd_spawn_ogre), daemon=True).start()
+#     bot.polling(none_stop=True)
+
+# time_now = datetime.datetime.today()
+# send_notifications(time_now, time_now)

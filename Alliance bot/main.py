@@ -74,14 +74,7 @@ async def spawn_ogre(message: types.Message):
 
 @dp.message_handler()
 async def get_user_text(message: types.Message):
-    if message.text == ("+" + "1"):
-        await message.reply(f"Ваш часовой пояс = {message.text}")
-        # bot.send_message(message.chat.id, message.from_user.id)
-        # bot.send_message(message.chat.id, message)
-    elif message.text == ("-" + "1"):
-        await message.reply(f"Ваш часовой пояс = {message.text}")
-    else:
-        await message.reply("Неизвестная команда")
+    await message.reply("Неизвестная команда")
 
 
 async def check_time(bd_spawn_robot, bd_spawn_ogre):
